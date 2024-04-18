@@ -4,7 +4,9 @@ Data Sources:
 	Apt Listing Data: https://archive.ics.uci.edu/dataset/555/apartment+for+rent+classified
 	GIS Zip Data: https://www.arcgis.com/home/item.html?id=8d2012a2016e484dafaac0451f9aea24
 	IRS Zip Data: https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-2020-zip-code-data-soi
-	GeoJSON Data: https://eric.clst.org/tech/usgeojson/
+	USA GeoJSON Data: https://eric.clst.org/tech/usgeojson/
+	US States GeoJSON Data: https://github.com/OpenDataDE/State-zip-code-GeoJSON
+
 	
 dataJoining.py -> Joins all three datasets together
 	Zip codes generated on Apt Lat/Long from GIS Zip Data
@@ -27,9 +29,6 @@ modelCreation.ipynb -> Creates preditive models
 	XGBoost model (Tuned)
 	Predicted price saved to dataset
 	
-
-Dropbox Link: https://www.dropbox.com/scl/fo/oq6ols01381xkezffovju/h?rlkey=ssbara0sj274ei8yifvkzaidy&dl=0
-
 aptVis - Proof of concept
 	Draws all states using gz_2010_us_040_00_500k.json
 	Predicted datapoints drawn with lat/long converted to pojection 
@@ -41,4 +40,3 @@ aptVis - Proof of concept
 		data converted from JSON and compressed/simplified using Mapshaper
 		
 	
-ZIP CODES CANNOT BE INTEGERS!!!!
