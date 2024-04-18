@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Apartment Pricing Visualization</title>
+
+    <!-- Import required D3 and TopoJSON libraries -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+
+    <!-- Load bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+
+
+    <style>
+        body {
+            background-color: lightgray; /* Set the background color of the entire screen */
+            margin: 0; /* Remove default margin */
+            padding: 0; /* Remove default padding */
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #007bff; /* Blue background color */
+            color: #fff; /* White text color */
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        h2 {
+            margin: 10px 0 0; /* Top margin to separate from h1 */
+            font-size: 18px;
+            font-weight: normal; /* Remove bold from h2 */
+        }
+
+
+        /* Define CSS rules */
+        .default-zip {
+            fill: black;
+        }
+    
+        .default-zip:hover {
+            fill: lightblue;
+        }
+    
+        .selected-zip {
+            fill: red;
+            font-weight: bold;
+        }
+    
+        
+        .tooltip {
+            background-color: lightgray; /* Add this line to set the background color */
+            position: absolute;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        /* Center SVG horizontally */
+        svg {
+            display: block;
+            margin: 0 auto;
+        }
+        /* Adjust layout for the second and third maps */
+        #second-map,
+        #third-map {
+            display: inline-block;
+            vertical-align: top;
+            width: 45%; 
+            height: calc(100vh / 3); /* Set height to 1/3 of viewport height */
+            margin: 10px; /* Add margin for spacing between maps */
+
+            border: 1px solid black; /* Black outline */
+            border-radius: 5px; /* Rounded corners */
+        }
+        /* Add a container to center the maps horizontally */
+        #map-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+   
+        
+        /* Style for legend */
+        .legend {
+            font-size: 14px;
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            flex-direction: column; /* Arrange items in a column */
+            align-items: center; /* Center items vertically */
+            width: calc(100% / 2); /* Set width to 1/3 of the screen width */
+            margin: 0 auto; /* Center horizontally */
+        }
+
+        /* Style for legend title */
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center; /* Center the text horizontally */
+            width: 100%; /* Set the width to 100% */
+        }
+    
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            margin-right: 20px; /* Add right margin for spacing between legend items */
+        }
+    
+        .legend-color {
+            width: 15px; /* Decrease the width */
+            height: 15px; /* Decrease the height */
+            margin-right: 10px; /* Increase the margin-right */
+        }
+
+        #legend-container {
+            text-align: center; /* Center the legend horizontally */
+            margin-top: 20px; /* Adjust margin top as needed for spacing */
+        }
+
+        /* Add styles for buttons */
+        #buttons-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            z-index: 1000;
+        }
+
+        button,
+        select {
+            margin-bottom: 10px;
+            padding: 10px 10px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #fff; /* White outline */
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover,
+        select:hover {
+            background-color: #0056b3;
+        }
+
+        select {
+            padding: 10px;
+            width: 150px;
+        }
+
+        /* Style for price container */
+        #price-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            z-index: 1000;
+            background-color: #007bff; 
+            color: #fff;
+            border-radius: 5px; /* Rounded corners */
+            padding: 10px; /* Add padding */
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* Add shadow effect */
+            border: 1px solid #fff; /* White outline */
+        }
+
+        #price-container h2 {
+            text-align: center; /* Center the text horizontally */
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: #fff; /* White text color */
+        }
+
+        /* Style for price item */
+        .price-item {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 10px; /* Add bottom margin */
+        }
+
+        .price-item span {
+            margin-right: 10px;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>The Roommates Team Project Visualization</h1>
+        <h2>Please select any filters, then click on a state and a zip code to see the perdicted apartment price.</h2>
+    </header>
+
+    <svg id="first-map"></svg>
+    <div id="legend-container"></div>
+    <div id="map-container">
+        <svg id="second-map">
+            <text x="50%" y="20" text-anchor="middle" font-size="16px">State Map</text>
+        </svg>
+        <svg id="third-map">
+            <text x="50%" y="20" text-anchor="middle" font-size="16px">Zip Code Map</text>
+        </svg>
+    </div>
+    <div id="legend2-container"></div>
+    
+    <!-- Add buttons here -->
+    <div id="buttons-container">
+        <select id="bedroomsSelect">
+            <option value="NA">Select Bedrooms</option>
+            <option value="1">1 Bedroom</option>
+            <option value="2">2 Bedrooms</option>
+            <option value="3">3 Bedrooms</option>
+            <option value="4">4 Bedrooms</option>
+        </select>
+        <select id="bathroomsSelect">
+            <option value="NA">Select Bathrooms</option>
+            <option value="1">1 Bathroom</option>
+            <option value="2">2 Bathrooms</option>
+            <option value="3">3 Bathrooms</option>
+            <option value="4">4 Bathrooms</option>
+        </select>
+        <select id="sqftSelect">
+            <option value="NA">Select SQFT</option>
+            <option value="250">250</option>
+            <option value="500">500</option>
+            <option value="750">750</option>
+            <option value="1000">1000</option>
+            <option value="1250">1250</option>
+            <option value="1500">1500</option>
+            <option value="2000">2000</option>
+            <option value="2500">2500</option>
+        </select>
+        <select id="parkingSelect">
+            <option value="NA">Has Parking</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </select>
+        <select id="petSelect">
+            <option value="NA">Allows Pets</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </select>
+        <button id="updateDataButton">Update Data</button> 
+    </div>
+
+    <div id="price-container">
+        <h2 id="zipCodeTitle">Info for Zip Code:</h2>
+        <div class="price-item">
+            <span id="bedroomsLabel">Bedrooms:</span>
+            <span id="bedroomsValue"></span>
+        </div>
+        <div class="price-item">
+            <span id="bathroomsLabel">Bathrooms:</span>
+            <span id="bathroomsValue"></span>
+        </div>
+        <div class="price-item">
+            <span id="sqftLabel">SQFT:</span>
+            <span id="sqftValue"></span>
+        </div>
+        <div class="price-item">
+            <span id="parkLabel">Has Parking:</span>
+            <span id="parkValue"></span>
+        </div>
+        <div class="price-item">
+            <span id="petLabel">Pets Alwd:</span>
+            <span id="petValue"></span>
+        </div>
+        <div class="price-item">
+            <span id="zipAvgLabel">Zip Predicted Price: $</span>
+            <span id="zipAvgValue"></span>
+        </div>
+    </div>
+    
+
+    <script>
+        // Get the select elements for bedrooms and bathrooms
+        var bedroomsSelect = document.getElementById("bedroomsSelect");
+        var bathroomsSelect = document.getElementById("bathroomsSelect");
+        var sqftSelect = document.getElementById("sqftSelect");
+        var parkingSelect = document.getElementById("parkingSelect");
+        var petSelect = document.getElementById("petSelect");
+        
+        // Define margin and dimensions for svg
+        var margin = { top: 20, right: 20, bottom: 20, left: 20 };
+        var fullWidth = window.innerWidth; // Full width of the window
+        var fullHeight = window.innerHeight; // Full height of the window
+        var width = fullWidth - margin.left - margin.right;
+        var height = (2 * fullHeight / 3) - margin.top - margin.bottom;
+        // var width2 = (width - 2 * margin.left) / 2; // Adjusted width calculation
+        var width2 = (fullWidth - 4 * margin.left) / 3; // Adjusted width calculation
+        var height2 = fullHeight / 3 - margin.top - margin.bottom; // Adjusted height calculation
+        
+        // Create SVG for the first map
+        var svgUSA = d3.select("#first-map")
+                     .attr("width", fullWidth)
+                     .attr("height", height)
+                     .append("g");
+
+        // Create SVG for the second map
+        var svgSTATE = d3.select("#second-map")
+                     .attr("width", width2 + margin.left + margin.right)
+                     .attr("height", height2 + margin.top + margin.bottom)
+                     .append("g")
+                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                     
+        // Create SVG for the third map next to the second map
+        var svgZIP = d3.select("#third-map")
+                     .attr("width", width2 + margin.left + margin.right)
+                     .attr("height", height2 + margin.top + margin.bottom)
+                     .append("g")
+                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Define zoom behavior
+        var zoom = d3.zoom()
+            .scaleExtent([1, 20])
+            .on("zoom", function() {
+                svgSTATE.attr("transform", d3.event.transform);
+                var currentScale = d3.event.transform.k;
+            });
+            
+        // Load both CSV and GeoJSON files using Promise.all()
+        Promise.all([
+            d3.json("VIS_DATA/gz_2010_us_040_00_500k.json"),
+            d3.csv("VIS_DATA/STATES.csv"),
+            d3.csv("VIS_DATA/predicted_data.csv"),
+            d3.csv("VIS_DATA/permsPredictedFIN.csv"),
+        ]).then(function(data) {
+            // Extract data from the Promise
+            var USAGeoJSON = data[0];
+            var stateABV = data[1];
+            var apartmentData = data[2];
+            var aptPermutations = data[3];
+            
+            // Create a mapping between state names and abbreviations
+            var stateAbvMap = {};
+            stateABV.forEach(function(state) {
+                stateAbvMap[state.STATE] = state.ABV;
+            });
+
+            console.log("USAGeoJSON: ", USAGeoJSON)
+            console.log("State Abv: ", stateAbvMap)
+            console.log("apartmentData: ", apartmentData)
+            console.log("Permutations Predicted: ", aptPermutations)
+            
+            function calculateAverageStatePredictions(data) {
+                const statePredictions = {};
+                data.forEach((item) => {
+                    const state = item.STATE;
+                    const predictedPrice = parseFloat(item.predicted_price);
+
+                    if (!statePredictions[state]) {
+                        statePredictions[state] = { sum: 0, count: 0 };
+                    }
+
+                    statePredictions[state].sum += predictedPrice;
+                    statePredictions[state].count++;
+                });
+                const averagePredictions = [];
+                for (const state in statePredictions) {
+                    const { sum, count } = statePredictions[state];
+                    averagePredictions.push({ STATE: state, predicted_price: sum / count });
+                }
+
+                return averagePredictions;
+            }
+            function calculateAverageZipPredictions(data) {
+                const zipPredictions = {};
+                data.forEach((item) => {
+                    const zipcode = item.zipcode;
+                    const state = item.STATE;
+                    const predictedPrice = parseFloat(item.predicted_price);
+
+                    if (!zipPredictions[zipcode]) {
+                        zipPredictions[zipcode] = {};
+                    }
+
+                    if (!zipPredictions[zipcode][state]) {
+                        zipPredictions[zipcode][state] = { sum: 0, count: 0 };
+                    }
+
+                    zipPredictions[zipcode][state].sum += predictedPrice;
+                    zipPredictions[zipcode][state].count++;
+                });
+
+                const averageZipPredictions = [];
+                for (const zipcode in zipPredictions) {
+                    for (const state in zipPredictions[zipcode]) {
+                        const { sum, count } = zipPredictions[zipcode][state];
+                        averageZipPredictions.push({ zipcode: zipcode, STATE: state, predicted_price: sum / count });
+                    }
+                }
+
+                return averageZipPredictions;
+            }
+            // const stateAvg = calculateAverageStatePredictions(aptPermutations);
+            // const zipAVG = calculateAverageZipPredictions(aptPermutations);
+            
+            // Parse latitude and longitude as numbers in apartmentData
+            apartmentData.forEach(function(d) {
+                d.latitude = +d.latitude;
+                d.longitude = +d.longitude;
+            });
+            
+            // Define projection and path for the map
+            var projection = d3.geoAlbersUsa()
+                               .fitSize([width, height], USAGeoJSON);
+
+            var path = d3.geoPath().projection(projection);
+
+            // Define projection and path for the second map
+            var projectionState = d3.geoAlbersUsa()
+                .fitSize([width, height/2], USAGeoJSON); // Using half the height for the second map
+            var pathState = d3.geoPath().projection(projectionState);
+
+            // Define the margin and height for the legend
+            var barHeight = 10;
+            var legendHeight = 30;
+            var legendMargin = { top: 30, bottom: 20};
+
+            // Create SVG for the legend
+            var nationalLegend = d3.select("#legend-container").append("svg")
+
+            // Create Map for first SVG
+            var allStates = svgUSA.append("g")
+                .attr("id", "statesUS");
+            
+            // Create Map for second SVG (initially empty)
+            var state = svgSTATE.append("g")
+                .attr("id", "stateSelected");
+            
+            // Create Map for third SVG (initially empty)
+            var zip = svgZIP.append("g")
+                .attr("id", "zipSelected");
+            
+            // Create Legend SVG (initially empty)
+            var statelLegend = d3.select("#legend2-container")
+
+            var tooltip = d3.tip()
+                    .attr("class", "tooltip")
+                    .html(function(d, zipData) {
+                        var zcode = zipData.properties.ZCTA5CE10 
+                        var scode = zipData.properties.STATEFP10
+
+                        return "<strong>State Code:</strong> " + scode + "<br>" +
+                            "<strong>ZIP CODE:</strong> " + zcode + "<br>" 
+                    });
+            
+            
+            loadUSMap(aptPermutations)
+
+            // Function to update the first map based on the selected state
+            function loadUSMap(data) {
+
+                var stateAvg = calculateAverageStatePredictions(data)
+                var zipAVG = calculateAverageZipPredictions(data)
+
+                console.log("State AVG: ", stateAvg)
+                console.log("ZIP AVG: ", zipAVG)
+           
+
+                // Color scale for state average price
+                var colorScaleStateAvg = d3.scaleSequential(d3.interpolateCividis)
+                    .domain(d3.extent(stateAvg, function(d) { return +d.predicted_price; }));
+
+                // Define color scale and domain for the legend
+                var colorScale = colorScaleStateAvg
+
+                // Clear existing elements
+                allStates.selectAll("*").remove();
+                state.selectAll("*").remove();
+                zip.selectAll("*").remove(); // Clear elements from the third map
+                nationalLegend.selectAll("*").remove(); // Clear elements from the third map
+                statelLegend.selectAll("*").remove(); // Clear elements from the third map
+                
+                // Draw map elements for GeoJSON
+                allStates.selectAll("path")
+                    .data(USAGeoJSON.features)
+                    .enter()
+                    .append("path")
+                    .attr("d", path)
+                    .style("fill", function(d) {
+                        // Find the corresponding state abbreviation
+                        var stateName = d.properties.NAME;
+                        var stateAbv = stateAbvMap[stateName];
+                        
+                        // Find the corresponding state average value using the abbreviation
+                        var stateValue = stateAvg.find(function(s) { return s.STATE === stateAbv; });
+                        
+                        // Check if stateValue is defined before using it
+                        if (stateValue) {
+                            return colorScaleStateAvg(+stateValue.predicted_price);
+                        } else {
+                            return "gray"; // Fallback color for states with missing data
+                        }
+                    })
+                    .style("stroke", "white")
+                    .on("click", function(event, d) {
+                        // console.log("SELECTED STATE:" , USAGeoJSON.features[d].properties.NAME)
+                        loadStateMap(USAGeoJSON.features[d].properties.NAME, stateAvg, zipAVG);
+                    });
+
+                // Color scale for apartment price
+                var colorScaleApt = d3.scaleSequential(d3.interpolateRdYlGn)
+                    .domain(d3.extent(apartmentData, function(d) { return d.price; }));
+
+                // Create Apartments for country SVG
+                var apartmentsUSA = svgUSA.append("g")
+                    .attr("id", "apartments");
+                // Draw map elements here (points, etc.) using D3
+                apartmentsUSA.selectAll("circle")
+                    .data(apartmentData)
+                    .enter()
+                    .append("circle")
+                    .attr("cx", function(d) { return projection([d.longitude, d.latitude])[0]; })
+                    .attr("cy", function(d) { return projection([d.longitude, d.latitude])[1]; })
+                    .attr("r", 1)
+                    // .style("fill", function(d) { return colorScaleApt(d.price); });
+                    .style("fill", 'black');
+
+                nationalLegend.attr("width", fullWidth / 2) // Set width to 1/3 of the screen width
+                    .attr("height", legendHeight + legendMargin.top + legendMargin.bottom)
+                    .append("g");
+                // Add legend title
+                nationalLegend.append("text")
+                    .attr("class", "legend-title")
+                    .attr("x", width/4)
+                    .attr("y", 35)
+                    .style("text-anchor", "middle")
+                    .text("Predicted National Price Range");
+                // Create linear gradient for the legend
+                var linearGradient = nationalLegend.append("defs")
+                    .append("linearGradient")
+                    .attr("id", "linear-gradient")
+                    .attr("x1", "0%")
+                    .attr("x2", "100%");
+                
+                // Define stops for the gradient based on the color scale
+                linearGradient.selectAll("stop")
+                    .data(colorScale.ticks().map((t, i, n) => ({ offset: `${100 * i / n.length}%`, color: colorScale(t) })))
+                    .enter().append("stop")
+                    .attr("offset", d => d.offset)
+                    .attr("stop-color", d => d.color);
+                // Create the gradient rectangle for the legend
+                nationalLegend.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", (width/2) )
+                    .attr("height", barHeight)
+                    .style("fill", "url(#linear-gradient)");
+                // Create axis scale for the legend
+                var axisScale = d3.scaleLinear()
+                    .domain(colorScale.domain())
+                    .range([0, (width/2) ]);
+                // Create axis for the legend
+                var axisBottom = d3.axisBottom(axisScale)
+                    .ticks(width / 80)
+                    .tickSize(-barHeight);
+                // Append the axis to the legend SVG
+                nationalLegend.append("g")
+                    .attr("class", "x-axis")
+                    .attr("transform", "translate(0," + (legendHeight - legendMargin.bottom) + ")")
+                    .call(axisBottom);
+            }
+
+            // Function to update the second map based on the selected state
+            function loadStateMap(selectedState, stateAvg, zipAVG) {   
+                // Reset zoom level
+                svgSTATE.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+
+                // Clear existing elements
+                state.selectAll("*").remove();
+                zip.selectAll("*").remove(); // Clear elements from the third map
+                statelLegend.selectAll("*").remove(); // Clear elements from the third map
+
+                var selectedStateAbv = stateAbvMap[selectedState];
+                console.log("selectedStateAbv:", selectedStateAbv);
+
+                // Convert the selected state abbreviation to lowercase
+                var selectedStateAbvLower = selectedStateAbv.toLowerCase();
+
+                // Load the GeoJSON file based on the lowercase selected state abbreviation
+                d3.json("VIS_DATA/ZIPS/State-zip-code-GeoJSON-master/compressed/" + selectedStateAbvLower + "_zip_codes_geo.min.geojson").then(function(zipData) {
+                    console.log("Zip Code GeoJSON for " + selectedState + ":", zipData);
+
+                    // Update the projection for the selected state
+                    var projectionStateUpdated = d3.geoIdentity().reflectY(true).fitSize([width/2, height / 2], zipData);
+                    var pathStateUpdated = d3.geoPath().projection(projectionStateUpdated);
+
+                    // Color scale for NATIONAL average price
+                    // var colorScaleZipAvg = d3.scaleSequential(d3.interpolateCividis)
+                    //     .domain(d3.extent(zipAVG, function(d) { return +d.predicted_price; }));
+                    // Filter zipAVG on "STATE" by selectedStateAbv
+                    var filteredZipAVG = zipAVG.filter(function(d) {
+                        return d.STATE === selectedStateAbv;});
+                    // Color scale for STATE average price
+                    var colorScaleZipAvg = d3.scaleSequential(d3.interpolateCividis)
+                        .domain(d3.extent(filteredZipAVG, function(d) { return +d.predicted_price; }));
+
+                    // Define color scale and domain for the legend
+                    var colorScale = colorScaleZipAvg
+
+                    // Create SVG for the legend
+                    var statelLegend = d3.select("#legend2-container")
+                        .append("svg")
+                        .attr("width", fullWidth / 2) // Set width to 1/3 of the screen width
+                        .attr("height", legendHeight + legendMargin.top + legendMargin.bottom)
+                        .append("g");
+                    // Add legend title
+                    statelLegend.append("text")
+                        .attr("class", "legend-title")
+                        .attr("x", width / 4)
+                        .attr("y", 35) // Adjust the position of the title as needed
+                        .style("text-anchor", "middle")
+                        .text(selectedState+" Predicted Price Range");
+                    // Create linear gradient for the legend
+                    var linearGradient = statelLegend.append("defs")
+                        .append("linearGradient")
+                        .attr("id", "linear-gradient")
+                        .attr("x1", "0%")
+                        .attr("x2", "100%");
+                    // Define stops for the gradient based on the color scale
+                    linearGradient.selectAll("stop")
+                        .data(colorScale.ticks().map((t, i, n) => ({ offset: `${100 * i / n.length}%`, color: colorScale(t) })))
+                        .enter().append("stop")
+                        .attr("offset", d => d.offset)
+                        .attr("stop-color", d => d.color);
+                    // Create the gradient rectangle for the legend
+                    statelLegend.append("rect")
+                        .attr("x", 0)
+                        .attr("y", 0)
+                        .attr("width", width/2 )
+                        .attr("height", barHeight)
+                        .style("fill", "url(#linear-gradient)");
+                    // Create axis scale for the legend
+                    var axisScale = d3.scaleLinear()
+                        .domain(colorScale.domain())
+                        .range([0, (width/2) ]);
+                    // Create axis for the legend
+                    var axisBottom = d3.axisBottom(axisScale)
+                        .ticks(width / 80)
+                        .tickSize(-barHeight);
+                    // Append the axis to the legend SVG
+                    statelLegend.append("g")
+                        .attr("class", "x-axis")
+                        .attr("transform", "translate(0," + (legendHeight - legendMargin.bottom) + ")")
+                        .call(axisBottom);                    
+
+                    // Draw map elements for selected state zip codes using updated projection
+                    state.selectAll("path")
+                        .data(zipData.features)
+                        .enter()
+                        .append("path")
+                        // .attr("d", pathStateUpdated) // Use updated pathState
+                        .style("fill", function(d) {
+                            // Find the corresponding state abbreviation
+                            var zipName = d.properties.ZCTA5CE10;
+
+                            // Find the corresponding state average value using the abbreviation
+                            var zipValue = zipAVG.find(function(s) { return s.zipcode === zipName; });
+
+                            // Check if zipValue is defined before using it
+                            if (zipValue) {
+                                return colorScaleZipAvg(+zipValue.predicted_price);
+                            } else {
+                                return "white"; // Fallback color for zips with missing data
+                            }
+                        })
+                        .style("stroke", "white")
+                        .style("stroke-width", "0.5px") // Set the stroke width to a smaller value
+                        .on("mouseover", function(event,d) {
+                            tooltip.show(d, zipData.features[d]);
+                        })
+                        .on("mousemove", function(d) {
+                            tooltip.style("top", (d3.event.pageY - 70) + "px")
+                                .style("left", (d3.event.pageX + 10) + "px");
+                        })
+                        .on("mouseout", function(d) {
+                            tooltip.hide(d, zipData.features[d]);
+                        }) 
+                        .on("click", function(event, d) {
+                            // Remove previous selection
+                            state.selectAll(".selected-zip").classed("selected-zip", false);
+                            zip.selectAll(".selected-zip").classed("selected-zip", false); // Remove selection from the third map
+                            
+                            // Apply selected style to the clicked zip code
+                            d3.select(this).classed("selected-zip", true);
+                            // Load and update the third map with zip code details
+                            var selectedZipCode = zipData.features[d].properties.ZCTA5CE10;
+
+                            // Find the corresponding state average value using the abbreviation
+                            var zipValue = zipAVG.find(function(s) { return s.zipcode === selectedZipCode; });
+                            // Check if zipValue is defined before using it
+                            var zipColor;
+                            if (zipValue) {
+                                zipColor = colorScaleZipAvg(+zipValue.predicted_price);
+                                
+                            } else {
+                                zipColor = "white"; // Fallback color for zips with missing data
+                            }
+
+                            //Load selected ZIP map
+                            loadZipCodeMap(zipData.features[d], selectedZipCode, zipColor, +zipValue.predicted_price);
+                        })
+                        // Add transition to the paths, drawing one after another with a delay
+                        .transition()
+                        .delay(function (d, i) { return i * 5; }) // Adjust delay as needed
+                        .duration(250) // Adjust duration as needed
+                        .attr("d", pathStateUpdated);
+                    state.call(tooltip)
+
+                    console.log("DONE LOADING STATE.")
+                    
+                    // Define zoom behavior
+                    var zoom = d3.zoom()
+                        .scaleExtent([1, 20])
+                        .on("zoom", function() {
+                            svgSTATE.attr("transform", d3.event.transform);
+                            var currentScale = d3.event.transform.k;
+                            state.selectAll("path")
+                                .style("stroke-width", 0.5 / currentScale + "px")
+                                .attr("transform", function(d) {
+                                    return "translate(" + d3.event.transform.x + "," + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")";
+                                });
+                        });
+
+                    // Apply zoom behavior to the second SVG
+                    svgSTATE.call(zoom)
+                        .classed("zoom-container", true);
+                }).catch(function(error) {
+                    console.error("Error loading GeoJSON:", error);
+                });
+            }
+
+            // Function to load and update the third map with zip code details
+            function loadZipCodeMap(zipDatum, zipCode, zipPathColor, predicted_price) {
+                console.log("ZIP CODE MAP DATA SENT Data:",zipDatum)
+                console.log("ZIP CODE MAP DATA SENT code:", zipCode)
+                console.log("ZIP CODE MAP DATA SENT color:", zipPathColor)
+                console.log("ZIP CODE MAP DATA SENT price:", predicted_price)
+
+                // Update the title with the selected zip code
+                document.getElementById("zipCodeTitle").textContent = "Info for Zip Code: " + zipCode;
+
+                // Clear existing elements in the third map
+                zip.selectAll("*").remove();
+                
+                // Update the projection for the selected zip code
+                var projectionZip = d3.geoIdentity().reflectY(true).fitSize([width/2, height / 2], zipDatum);
+                var pathZip = d3.geoPath().projection(projectionZip);
+                
+                updatePrice(predicted_price)
+
+                // Draw map element for the selected zip code in the third map
+                zip.append("path")
+                    .datum(zipDatum)
+                    .transition()
+                    .attr("d", pathZip)
+                    .style("fill", zipPathColor) // Set a fill color for the zip code area
+                    .style("stroke", "white")
+                    .style("stroke-width", "0.5px");
+                
+                // console.log("Zip Group Selection:", zip);
+                // console.log("DONE LOADING ZIP CODE.")                
+            }
+
+            // Event listener for bedrooms select
+            var selectedBedrooms = NaN
+            bedroomsSelect.addEventListener("change", function() {
+                selectedBedrooms = (bedroomsSelect.value);
+                console.log("Selected Bedrooms:", selectedBedrooms);
+                // updateMapData()
+            });
+
+            // Event listener for bathrooms select
+            var selectedBathrooms = NaN
+            bathroomsSelect.addEventListener("change", function() {
+                selectedBathrooms = (bathroomsSelect.value);
+                console.log("Selected Bathrooms:", selectedBathrooms);
+                // updateMapData()
+            });
+
+            // Event listener for sqft select
+            var selectedSqft = NaN
+            sqftSelect.addEventListener("change", function() {
+                selectedSqft = (sqftSelect.value);
+                console.log("Selected SQFT:", selectedSqft);
+                // updateMapData()
+            });
+
+            // Event listener for park select
+            var selectedPark = NaN
+            parkingSelect.addEventListener("change", function() {
+                selectedPark = (parkingSelect.value);
+                console.log("Selected Park:", selectedPark);
+                // updateMapData()
+            });
+
+            // Event listener for pet select
+            var selectedPet = NaN
+            petSelect.addEventListener("change", function() {
+                selectedPet = (petSelect.value);
+                console.log("Selected Pet:", selectedPet);
+                // updateMapData()
+            });
+            
+            var updateDataButton = document.getElementById("updateDataButton");
+            updateDataButton.addEventListener("click", function() {
+                console.log("Update Data button clicked");
+                
+                updateLabelsAndValues()
+                updateMapData();
+            });
+            updateLabelsAndValues()
+
+            // Update the labels and values based on user selections or data updates
+            function updateLabelsAndValues() {
+                var bedroomsLabel = document.getElementById("bedroomsLabel");
+                var bedroomsValue = document.getElementById("bedroomsValue");
+                var bathroomsLabel = document.getElementById("bathroomsLabel");
+                var bathroomsValue = document.getElementById("bathroomsValue");
+                var sqftLabel = document.getElementById("sqftLabel");
+                var sqftValue = document.getElementById("sqftValue");
+                
+                var parkLabel = document.getElementById("parkLabel");
+                var parkValue = document.getElementById("parkValue");
+                var petLabel = document.getElementById("petLabel");
+                var petValue = document.getElementById("petValue");
+                
+                // Update the labels and values here based on your logic or data
+                bedroomsValue.textContent = selectedBedrooms || "N/A";
+                bathroomsValue.textContent = selectedBathrooms || "N/A";
+                sqftValue.textContent = selectedSqft || "N/A";
+                parkValue.textContent = selectedPark || "N/A";
+                petValue.textContent = selectedPet || "N/A";
+            }
+            function updatePrice(predicted_price) {
+                var zipAvgLabel = document.getElementById("zipAvgLabel");
+                var zipAvgValue = document.getElementById("zipAvgValue");
+
+                // Round the predicted_price to the nearest whole number
+                var roundedPrice = Math.round(predicted_price);
+
+                // Update the labels and values here based on your logic or data
+                zipAvgValue.textContent = roundedPrice || "N/A";
+            }
+
+            function updateMapData() {
+                // Filter aptPermutations based on selected filters
+                var filteredData = aptPermutations.filter(function(apt) {
+                    var isValid = true;
+                    if (!isNaN(selectedBathrooms)) {
+                        isValid = isValid && apt.bathrooms === selectedBathrooms;
+                    }
+                    if (!isNaN(selectedBedrooms)) {
+                        isValid = isValid && apt.bedrooms === selectedBedrooms;
+                    }
+                    if (!isNaN(selectedSqft)) {
+                        isValid = isValid && apt.square_feet === selectedSqft;
+                    }
+                    if (!isNaN(selectedPark)) {
+                        isValid = isValid && apt.has_parking === selectedPark;
+                    }
+                    if (!isNaN(selectedPet)) {
+                        isValid = isValid && apt.pets_allowed === selectedPet;
+                    }
+                    return isValid;
+                });
+                console.log("filteredData:", filteredData);
+                // Load the updated map with filtered data
+                loadUSMap(filteredData);
+            }
+
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# ignore data files
+VIS_DATA/
+DataModified/
+DataSource/
+
+*.csv
