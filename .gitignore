@@ -4,3 +4,6 @@ DataModified/
 DataSource/
 
 *.csv
+
+# ignore test folder
+TestFolder/
