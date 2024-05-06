@@ -23,4 +23,6 @@ This project focuses on predicting apartment prices and visualizing data related
 4. Open and run `modelCreation.ipynb` to build predictive models and save predicted prices.
 5. Launch `aptVis.html` in a web browser to interact with the visualization tool. Enter the necessary inputs to predict apartment prices based on selected criteria.
 
-Feel free to explore and modify the codebase to suit your specific needs and datasets.
+#### Screenshot
+![127 0 0 1_5500_Code_Visual_aptVisFull html (2)](https://github.com/SantiagoEnriqueGA/d3_apartment_rent_prediction_vis/assets/50879742/7ed87ad8-c643-4608-ad89-fafc3b797acd)
+
