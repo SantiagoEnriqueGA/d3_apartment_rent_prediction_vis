@@ -1,7 +1,7 @@
 ## Apartment Classifieds Prediction and Visualization
 
-#### Overview
-This project focuses on predicting apartment prices and visualizing data related to apartment listings. It combines various datasets to create predictive models and interactive visualizations using geographic and demographic information.
+#### Overview/Goal
+This project focuses on predicting apartment prices and visualizing data related to apartment listings. It combines various datasets to create predictive models and interactive visualizations using geographic and demographic information. Many models were tested including a using custom random forest implementation, XGBoost, as well as H2O autoML. The final dashboard is built in javascript using D3.
 
 #### Data Sources
 - **Apt Listing Data:** [UCI Apartment Listing Dataset](https://archive.ics.uci.edu/dataset/555/apartment+for+rent+classified)
